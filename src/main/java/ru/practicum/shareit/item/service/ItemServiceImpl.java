@@ -35,58 +35,60 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public Item addItem(ItemDto itemDto, int userId) {
+    public ItemDto addItem(ItemDto itemDto, int userId) {
         if (!userStorage.getUsers().containsKey(userId))
             throw new UserNotFoundException("Пользователь " + userId + " не найден");
-        return itemStorage.addItem(ItemToDto.toItem(itemDto), userId);
+
+        return ItemToDto.toItemDto(itemStorage.addItem(ItemToDto.toItem(itemDto), userId));
     }
 
     @Override
-    public Item getItem(int id) {
-        return itemStorage.getItemById(id);
+    public ItemDto getItem(int id) {
+        return ItemToDto.toItemDto(itemStorage.getItemById(id));
     }
 
     @Override
-    public List<Item> getAllItems(int userId) {
+    public List<ItemDto> getAllItems(int userId) {
         if (!userStorage.getUsers().containsKey(userId))
             throw new UserNotFoundException("Пользователь " + userId + " не найден");
 
         Map<Integer, Item> temp = itemStorage.getAllItems();
-        Map<Integer, Item> result = new LinkedHashMap<>();
+        Map<Integer, ItemDto> result = new LinkedHashMap<>();
         for (Item item : temp.values()) {
             if (item.getOwner() == userId)
-                result.put(item.getId(), item);
+                result.put(item.getId(), ItemToDto.toItemDto(item));
         }
         return new ArrayList<>(result.values());
     }
 
     @Override
-    public Item updateItem(ItemDto item, int itemId, int userId) {
+    public ItemDto updateItem(ItemDto item, int itemId, int userId) {
         if (!userStorage.getUsers().containsKey(userId))
             throw new UserNotFoundException("Пользователь " + userId + " не найден");
         if (itemStorage.getItemById(itemId).getOwner() != userId)
             throw new ItemAccessRestrictException("Только владелец вещи может ее изменить");
 
-        return itemStorage.updateItem(ItemToDto.toItem(item), itemId);
+        return ItemToDto.toItemDto(itemStorage.updateItem(ItemToDto.toItem(item), itemId));
     }
 
     @Override
     public void deleteItem(int id, int userId) {
         if (itemStorage.getItemById(id).getOwner() != userId)
             throw new ItemAccessRestrictException("Только владелец вещи может ее удалить");
+
         itemStorage.deleteItem(id);
     }
 
     @Override
-    public List<Item> searchItems(String request) {
+    public List<ItemDto> searchItems(String request) {
         Map<Integer, Item> temp = itemStorage.getAllItems();
-        Map<Integer, Item> result = new LinkedHashMap<>();
+        Map<Integer, ItemDto> result = new LinkedHashMap<>();
         if (!"".equals(request)) {
             for (Item item : temp.values()) {
                 if (item.getAvailable()
                         && (item.getName().toLowerCase().contains(request.toLowerCase())
                         || item.getDescription().toLowerCase().contains(request.toLowerCase())))
-                    result.put(item.getId(), item);
+                    result.put(item.getId(), ItemToDto.toItemDto(item));
             }
         }
         return new ArrayList<>(result.values());

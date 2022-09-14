@@ -17,6 +17,7 @@ import javax.validation.constraints.Email;
 @AllArgsConstructor
 @Builder
 public class UserDto {
+    private int id;
     private String name;
     @Email
     private String email;

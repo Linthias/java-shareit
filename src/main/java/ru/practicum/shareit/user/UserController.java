@@ -17,16 +17,12 @@ import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.exceptions.UserDataConflictException;
 import ru.practicum.shareit.user.exceptions.UserIncompleteDataException;
 import ru.practicum.shareit.user.exceptions.UserNotFoundException;
-import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
 
-/**
- * TODO Sprint add-controllers.
- */
 @Slf4j
 @RestController
 @RequestMapping(path = "/users")
@@ -39,25 +35,25 @@ public class UserController {
     }
 
     @PostMapping
-    public User postUser(@Valid @RequestBody UserDto userDto) {
+    public UserDto postUser(@Valid @RequestBody UserDto userDto) {
         log.info("POST /users пользователь добавлен");
         return userService.addUser(userDto);
     }
 
     @PatchMapping("/{userId}")
-    public User patchUser(@PathVariable int userId, @Valid @RequestBody UserDto userDto) {
+    public UserDto patchUser(@PathVariable int userId, @Valid @RequestBody UserDto userDto) {
         log.info("PATCH /users/" + userId + " пользователь обновлен");
         return userService.updateUser(userDto, userId);
     }
 
     @GetMapping("/{userId}")
-    public User getUser(@PathVariable int userId) {
+    public UserDto getUser(@PathVariable int userId) {
         log.info("GET /users/" + userId + " пользователь получен");
         return userService.getUser(userId);
     }
 
     @GetMapping
-    public List<User> getAllUsers() {
+    public List<UserDto> getAllUsers() {
         log.info("GET /users получен список пользователей");
         return userService.getAllUsers();
     }

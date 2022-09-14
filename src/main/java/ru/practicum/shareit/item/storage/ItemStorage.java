@@ -44,6 +44,7 @@ public class ItemStorage {
     public Item getItemById(int id) {
         if (!items.containsKey(id))
             throw new ItemNotFoundException("Вещь " + id + " не найдена");
+
         return items.get(id);
     }
 
@@ -70,6 +71,7 @@ public class ItemStorage {
     public void deleteItem(int id) {
         if (!items.containsKey(id))
             throw new ItemNotFoundException("Вещь " + id + " не найдена");
+
         items.remove(id);
     }
 }

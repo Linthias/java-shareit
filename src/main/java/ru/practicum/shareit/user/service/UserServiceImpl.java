@@ -16,7 +16,9 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.storage.UserStorage;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Component
@@ -29,26 +31,31 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User addUser(UserDto userDto) {
-        return userStorage.addUser(UserToDto.toUser(userDto));
+    public UserDto addUser(UserDto userDto) {
+        return UserToDto.toUserDto(userStorage.addUser(UserToDto.toUser(userDto)));
     }
 
     @Override
-    public User getUser(int id) {
-        return userStorage.getUserById(id);
+    public UserDto getUser(int id) {
+        return UserToDto.toUserDto(userStorage.getUserById(id));
     }
 
     @Override
-    public List<User> getAllUsers() {
-        return new ArrayList<>(userStorage.getAllUsers().values());
+    public List<UserDto> getAllUsers() {
+        Map<Integer, User> temp = userStorage.getAllUsers();
+        Map<Integer, UserDto> result = new LinkedHashMap<>();
+        for (User user : temp.values()) {
+            result.put(user.getId(), UserToDto.toUserDto(user));
+        }
+        return new ArrayList<>(result.values());
     }
 
     @Override
-    public User updateUser(UserDto userDto, int id) {
+    public UserDto updateUser(UserDto userDto, int id) {
         if (!userStorage.getUsers().containsKey(id))
             throw new UserNotFoundException("Пользователь " + id + " не найден");
 
-        return userStorage.updateUser(UserToDto.toUser(userDto), id);
+        return UserToDto.toUserDto(userStorage.updateUser(UserToDto.toUser(userDto), id));
     }
 
     @Override

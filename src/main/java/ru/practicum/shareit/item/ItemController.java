@@ -18,16 +18,12 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.exceptions.ItemAccessRestrictException;
 import ru.practicum.shareit.item.exceptions.ItemIncompleteDataException;
 import ru.practicum.shareit.item.exceptions.ItemNotFoundException;
-import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.user.exceptions.UserNotFoundException;
 
 import java.util.List;
 import java.util.Map;
 
-/**
- * TODO Sprint add-controllers.
- */
 @Slf4j
 @RestController
 @RequestMapping("/items")
@@ -40,31 +36,31 @@ public class ItemController {
     }
 
     @PostMapping
-    public Item postItem(@RequestHeader("X-Sharer-User-Id") int userId, @RequestBody ItemDto item) {
+    public ItemDto postItem(@RequestHeader("X-Sharer-User-Id") int userId, @RequestBody ItemDto item) {
         log.info("POST /items вещь добавлена");
         return itemService.addItem(item, userId);
     }
 
     @PatchMapping("/{itemId}")
-    public Item patchItem(@RequestHeader("X-Sharer-User-Id") int userId, @PathVariable int itemId, @RequestBody ItemDto item) {
+    public ItemDto patchItem(@RequestHeader("X-Sharer-User-Id") int userId, @PathVariable int itemId, @RequestBody ItemDto item) {
         log.info("PATCH /items/" + itemId + " вещь обновлена");
         return itemService.updateItem(item, itemId, userId);
     }
 
     @GetMapping("/{itemId}")
-    public Item getItem(@RequestHeader(value = "X-Sharer-User-Id", required = false) int userId, @PathVariable int itemId) {
+    public ItemDto getItem(@RequestHeader(value = "X-Sharer-User-Id", required = false) int userId, @PathVariable int itemId) {
         log.info("GET /items/" + itemId + "вещь получена");
         return itemService.getItem(itemId);
     }
 
     @GetMapping
-    public List<Item> getUserItems(@RequestHeader("X-Sharer-User-Id") int userId) {
+    public List<ItemDto> getUserItems(@RequestHeader("X-Sharer-User-Id") int userId) {
         log.info("GET /items получен список для пользователя " + userId);
         return itemService.getAllItems(userId);
     }
 
     @GetMapping("/search")
-    public List<Item> searchForItems(@RequestHeader(value = "X-Sharer-User-Id", required = false) int userId, @RequestParam String text) {
+    public List<ItemDto> searchForItems(@RequestHeader(value = "X-Sharer-User-Id", required = false) int userId, @RequestParam String text) {
         log.info("GET /items/search получен список вещей");
         return itemService.searchItems(text);
     }
