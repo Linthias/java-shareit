@@ -13,8 +13,10 @@ import ru.practicum.shareit.booking.dto.MinBookingDto;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.storage.BookingRepository;
 import ru.practicum.shareit.item.dto.CommentDto;
+import ru.practicum.shareit.item.dto.CommentDtoMapper;
 import ru.practicum.shareit.item.dto.CommentInputDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemDtoMapper;
 import ru.practicum.shareit.item.dto.ItemWBookingsDto;
 import ru.practicum.shareit.item.exceptions.ItemAccessRestrictException;
 import ru.practicum.shareit.item.exceptions.ItemIncompleteDataException;
@@ -63,9 +65,9 @@ public class ItemServiceImpl implements ItemService {
         if (itemDto.getAvailable() == null)
             throw new ItemIncompleteDataException("Пустая доступность");
 
-        Item temp = ItemDto.toItem(itemDto);
+        Item temp = ItemDtoMapper.toItem(itemDto);
         temp.setOwner(userId);
-        return ItemDto.toItemDto(itemRepository.save(temp));
+        return ItemDtoMapper.toItemDto(itemRepository.save(temp));
     }
 
     @Override
@@ -95,7 +97,7 @@ public class ItemServiceImpl implements ItemService {
         if (finishedBookings == 0)
             throw new ItemIncompleteDataException("Пользователь " + userId + "  еще не использовал вещь " + itemId);
 
-        return CommentDto.toCommentDto(commentRepository.save(CommentInputDto.toComment(comment, itemId, userId)),
+        return CommentDtoMapper.toCommentDto(commentRepository.save(CommentDtoMapper.toComment(comment, itemId, userId)),
                 tempUser.get().getName());
     }
 
@@ -109,7 +111,7 @@ public class ItemServiceImpl implements ItemService {
             return findCloseBookings(tempItem.get());
         else {
             // вариант на случай, если запрос не от владельца
-            return ItemWBookingsDto.toItemWBookingsDto(tempItem.get(),
+            return ItemDtoMapper.toItemWBookingsDto(tempItem.get(),
                     null,
                     null,
                     getCommentDtoList(tempItem.get()));
@@ -137,7 +139,7 @@ public class ItemServiceImpl implements ItemService {
         List<CommentDto> result = new ArrayList<>();
 
         for (Comment comment : tempCommentList) {
-            result.add(CommentDto.toCommentDto(comment, userRepository.findById(comment.getAuthor()).get().getName()));
+            result.add(CommentDtoMapper.toCommentDto(comment, userRepository.findById(comment.getAuthor()).get().getName()));
         }
 
         return result;
@@ -152,7 +154,7 @@ public class ItemServiceImpl implements ItemService {
 
         switch (itemBookings.size()) {
             case 0:
-                result = ItemWBookingsDto.toItemWBookingsDto(item,
+                result = ItemDtoMapper.toItemWBookingsDto(item,
                         null,
                         null,
                         getCommentDtoList(item));
@@ -160,12 +162,12 @@ public class ItemServiceImpl implements ItemService {
             case 1:
                 Booking tempBooking = itemBookings.get(0);
                 if (tempBooking.getStart().isBefore(LocalDateTime.now()))
-                    result = ItemWBookingsDto.toItemWBookingsDto(item,
+                    result = ItemDtoMapper.toItemWBookingsDto(item,
                             new MinBookingDto(tempBooking.getId(), tempBooking.getBooker()),
                             null,
                             getCommentDtoList(item));
                 else
-                    result = ItemWBookingsDto.toItemWBookingsDto(item,
+                    result = ItemDtoMapper.toItemWBookingsDto(item,
                             null,
                             new MinBookingDto(tempBooking.getId(), tempBooking.getBooker()),
                             getCommentDtoList(item));
@@ -177,12 +179,12 @@ public class ItemServiceImpl implements ItemService {
                         prevBooking = booking;
                     } else {
                         if (prevBooking != null)
-                            result = ItemWBookingsDto.toItemWBookingsDto(item,
+                            result = ItemDtoMapper.toItemWBookingsDto(item,
                                     new MinBookingDto(prevBooking.getId(), prevBooking.getBooker()),
                                     new MinBookingDto(booking.getId(), booking.getBooker()),
                                     getCommentDtoList(item));
                         else
-                            result = ItemWBookingsDto.toItemWBookingsDto(item,
+                            result = ItemDtoMapper.toItemWBookingsDto(item,
                                     null,
                                     new MinBookingDto(booking.getId(), booking.getBooker()),
                                     getCommentDtoList(item));
@@ -213,7 +215,7 @@ public class ItemServiceImpl implements ItemService {
         if (itemDto.getAvailable() != null)
             temp.get().setAvailable(itemDto.getAvailable());
 
-        return ItemDto.toItemDto(itemRepository.save(temp.get()));
+        return ItemDtoMapper.toItemDto(itemRepository.save(temp.get()));
     }
 
     @Override
@@ -233,7 +235,7 @@ public class ItemServiceImpl implements ItemService {
         if (!"".equals(request)) {
             List<Item> temp = itemRepository.search(request);
             for (Item item : temp) {
-                result.add(ItemDto.toItemDto(item));
+                result.add(ItemDtoMapper.toItemDto(item));
             }
         }
 

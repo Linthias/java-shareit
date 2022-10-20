@@ -22,7 +22,6 @@ import java.time.LocalDateTime;
 public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    //@GeneratedValue(strategy = GenerationType.AUTO)
     private int id;
 
     @Column(name = "comment_text", nullable = false, length = 200)

@@ -10,6 +10,7 @@ import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.user.dto.UserDtoMapper;
 import ru.practicum.shareit.user.exceptions.UserIncompleteDataException;
 import ru.practicum.shareit.user.exceptions.UserNotFoundException;
 import ru.practicum.shareit.user.model.User;
@@ -36,7 +37,7 @@ public class UserServiceImpl implements UserService {
         if (userDto.getEmail() == null || userDto.getEmail().equals(""))
             throw new UserIncompleteDataException("Пустая почта");
 
-        return UserDto.toUserDto(userRepository.save(UserDto.toUser(userDto)));
+        return UserDtoMapper.toUserDto(userRepository.save(UserDtoMapper.toUser(userDto)));
     }
 
     @Override
@@ -45,7 +46,7 @@ public class UserServiceImpl implements UserService {
         if (temp.isEmpty())
             throw new UserNotFoundException("Пользователь " + id + " не найден");
 
-        return UserDto.toUserDto(temp.get());
+        return UserDtoMapper.toUserDto(temp.get());
     }
 
     @Override
@@ -54,7 +55,7 @@ public class UserServiceImpl implements UserService {
         List<UserDto> result = new ArrayList<>();
 
         for (User user : temp) {
-            result.add(UserDto.toUserDto(user));
+            result.add(UserDtoMapper.toUserDto(user));
         }
 
         return result;
@@ -72,7 +73,7 @@ public class UserServiceImpl implements UserService {
         if (userDto.getEmail() == null)
             userDto.setEmail(temp.get().getEmail());
 
-        return UserDto.toUserDto(userRepository.save(UserDto.toUser(userDto)));
+        return UserDtoMapper.toUserDto(userRepository.save(UserDtoMapper.toUser(userDto)));
     }
 
     @Override

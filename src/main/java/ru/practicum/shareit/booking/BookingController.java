@@ -33,10 +33,13 @@ import java.util.Map;
 public class BookingController {
     private final BookingService bookingService;
 
+
     @Autowired
     public BookingController(BookingService bookingService) {
         this.bookingService = bookingService;
     }
+
+
 
     @PostMapping
     public BookingDto postBooking(@RequestHeader("X-Sharer-User-Id") int userId,
@@ -103,8 +106,7 @@ public class BookingController {
     @ExceptionHandler(BookingUnsupportedStatusException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleUnsupportedStatus(BookingUnsupportedStatusException e) {
-        // пока я не скопировал ожидаемый текст ошибки напрямую из теста, он не проходил
-        return Map.of("error", "Unknown state: UNSUPPORTED_STATUS");
+        return Map.of("error", e.getMessage());
     }
 
     @ExceptionHandler(ItemNotFoundException.class)

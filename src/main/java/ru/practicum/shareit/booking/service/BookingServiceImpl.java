@@ -4,6 +4,7 @@ import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.booking.dto.BookingDtoMapper;
 import ru.practicum.shareit.booking.dto.BookingInputDto;
 import ru.practicum.shareit.booking.exceptions.BookingAccessRestrictException;
 import ru.practicum.shareit.booking.exceptions.BookingIncompleteDataException;
@@ -65,8 +66,8 @@ public class BookingServiceImpl implements BookingService {
         if (!tempItem.get().getAvailable())
             throw new BookingAccessRestrictException("Вещь " + tempItem.get().getId() + " недоступна для бронирования");
 
-        Booking result = BookingInputDto.toBooking(bookingDto, userId);
-        return BookingDto.toBookingDto(bookingRepository.save(result), tempItem.get().getName(), tempUser.get().getName());
+        Booking result = BookingDtoMapper.toBooking(bookingDto, userId);
+        return BookingDtoMapper.toBookingDto(bookingRepository.save(result), tempItem.get().getName(), tempUser.get().getName());
     }
 
     @Override
@@ -76,7 +77,7 @@ public class BookingServiceImpl implements BookingService {
             throw new BookingNotFoundException("Бронирование " + id + " не найдено");
         Optional<Item> tempItem = itemRepository.findById(result.get().getItem());
         if (tempItem.isEmpty())
-            throw new UserNotFoundException("Пользователь " + userId + " не найден");
+            throw new ItemNotFoundException("Вещь " + id + " не найдена");
         if (tempItem.get().getOwner() != userId)
             throw new UserNotFoundException("Только владелец вещи может одобрить бронирование");
 
@@ -93,7 +94,7 @@ public class BookingServiceImpl implements BookingService {
         // проверки на пользователя не нужны,
         // т.к. его наличие гарантируется существованием вещи (у каждой есть владелец)
         Optional<User> tempUser = userRepository.findById(userId);
-        return BookingDto.toBookingDto(bookingRepository.save(result.get()),
+        return BookingDtoMapper.toBookingDto(bookingRepository.save(result.get()),
                 tempItem.get().getName(),
                 tempUser.get().getName());
     }
@@ -112,7 +113,7 @@ public class BookingServiceImpl implements BookingService {
             throw new UserNotFoundException("Получить информацию о бронировании могут лишь авторы и владельцы вещей");
 
         Optional<User> tempUser = userRepository.findById(userId);
-        return BookingDto.toBookingDto(result.get(), tempItem.get().getName(), tempUser.get().getName());
+        return BookingDtoMapper.toBookingDto(result.get(), tempItem.get().getName(), tempUser.get().getName());
     }
 
     @Override
@@ -131,7 +132,7 @@ public class BookingServiceImpl implements BookingService {
             case "ALL":
                 for (Booking booking : tempBookingList) {
                     Item tempItem = itemRepository.findById(booking.getItem()).get();
-                    result.add(BookingDto.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
+                    result.add(BookingDtoMapper.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
                 }
                 break;
             case "CURRENT":
@@ -139,7 +140,7 @@ public class BookingServiceImpl implements BookingService {
                     if (booking.getStart().isBefore(LocalDateTime.now())
                             && booking.getEnd().isAfter(LocalDateTime.now())) {
                         Item tempItem = itemRepository.findById(booking.getItem()).get();
-                        result.add(BookingDto.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
+                        result.add(BookingDtoMapper.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
                     }
                 }
                 break;
@@ -147,7 +148,7 @@ public class BookingServiceImpl implements BookingService {
                 for (Booking booking : tempBookingList) {
                     if (booking.getEnd().isBefore(LocalDateTime.now())) {
                         Item tempItem = itemRepository.findById(booking.getItem()).get();
-                        result.add(BookingDto.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
+                        result.add(BookingDtoMapper.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
                     }
                 }
                 break;
@@ -155,7 +156,7 @@ public class BookingServiceImpl implements BookingService {
                 for (Booking booking : tempBookingList) {
                     if (booking.getStart().isAfter(LocalDateTime.now())) {
                         Item tempItem = itemRepository.findById(booking.getItem()).get();
-                        result.add(BookingDto.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
+                        result.add(BookingDtoMapper.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
                     }
                 }
                 break;
@@ -163,7 +164,7 @@ public class BookingServiceImpl implements BookingService {
                 for (Booking booking : tempBookingList) {
                     if (booking.getStatus().equals(BookingStatus.WAITING)) {
                         Item tempItem = itemRepository.findById(booking.getItem()).get();
-                        result.add(BookingDto.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
+                        result.add(BookingDtoMapper.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
                     }
                 }
                 break;
@@ -171,15 +172,12 @@ public class BookingServiceImpl implements BookingService {
                 for (Booking booking : tempBookingList) {
                     if (booking.getStatus().equals(BookingStatus.REJECTED)) {
                         Item tempItem = itemRepository.findById(booking.getItem()).get();
-                        result.add(BookingDto.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
+                        result.add(BookingDtoMapper.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
                     }
                 }
                 break;
             default:
-                // к сожалению, сообщение из исключения не используется --
-                // мне пришлось скопировать сообщение об ошибке напрямую из тестов,
-                // чтобы не было ошибок
-                throw new BookingUnsupportedStatusException("Unknown status: " + state);
+                throw new BookingUnsupportedStatusException("Unknown state: UNSUPPORTED_STATUS");
         }
 
         return result;
@@ -208,7 +206,7 @@ public class BookingServiceImpl implements BookingService {
             case "ALL":
                 for (Booking booking : tempBookingList) {
                     Item tempItem = itemRepository.findById(booking.getItem()).get();
-                    result.add(BookingDto.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
+                    result.add(BookingDtoMapper.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
                 }
                 break;
             case "CURRENT":
@@ -216,7 +214,7 @@ public class BookingServiceImpl implements BookingService {
                     if (booking.getStart().isBefore(LocalDateTime.now())
                             && booking.getEnd().isAfter(LocalDateTime.now())) {
                         Item tempItem = itemRepository.findById(booking.getItem()).get();
-                        result.add(BookingDto.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
+                        result.add(BookingDtoMapper.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
                     }
                 }
                 break;
@@ -224,7 +222,7 @@ public class BookingServiceImpl implements BookingService {
                 for (Booking booking : tempBookingList) {
                     if (booking.getEnd().isBefore(LocalDateTime.now())) {
                         Item tempItem = itemRepository.findById(booking.getItem()).get();
-                        result.add(BookingDto.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
+                        result.add(BookingDtoMapper.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
                     }
                 }
                 break;
@@ -232,7 +230,7 @@ public class BookingServiceImpl implements BookingService {
                 for (Booking booking : tempBookingList) {
                     if (booking.getStart().isAfter(LocalDateTime.now())) {
                         Item tempItem = itemRepository.findById(booking.getItem()).get();
-                        result.add(BookingDto.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
+                        result.add(BookingDtoMapper.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
                     }
                 }
                 break;
@@ -240,7 +238,7 @@ public class BookingServiceImpl implements BookingService {
                 for (Booking booking : tempBookingList) {
                     if (booking.getStatus().equals(BookingStatus.WAITING)) {
                         Item tempItem = itemRepository.findById(booking.getItem()).get();
-                        result.add(BookingDto.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
+                        result.add(BookingDtoMapper.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
                     }
                 }
                 break;
@@ -248,12 +246,12 @@ public class BookingServiceImpl implements BookingService {
                 for (Booking booking : tempBookingList) {
                     if (booking.getStatus().equals(BookingStatus.REJECTED)) {
                         Item tempItem = itemRepository.findById(booking.getItem()).get();
-                        result.add(BookingDto.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
+                        result.add(BookingDtoMapper.toBookingDto(booking, tempItem.getName(), tempUser.get().getName()));
                     }
                 }
                 break;
             default:
-                throw new BookingUnsupportedStatusException("Unknown status: " + state);
+                throw new BookingUnsupportedStatusException("Unknown state: UNSUPPORTED_STATUS");
         }
 
         return result;
