@@ -11,27 +11,28 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "items")
-public class Item {
+@Table(name = "comments")
+public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "item_name", nullable = false, length = 50)
-    private String name;
+    @Column(name = "comment_text", nullable = false, length = 200)
+    private String text;
 
-    @Column(nullable = false, length = 200)
-    private String description;
+    @Column(nullable = false)
+    private int item;
 
-    @Column(name = "is_available", nullable = false)
-    private Boolean available;
+    @Column(nullable = false)
+    private int author;
 
-    @Column(name = "owner_id", nullable = false)
-    private int owner;
+    @Column(nullable = false)
+    private LocalDateTime created;
 }

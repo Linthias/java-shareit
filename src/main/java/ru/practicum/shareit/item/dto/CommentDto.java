@@ -1,0 +1,20 @@
+package ru.practicum.shareit.item.dto;
+
+/*
+Вспомогательный dto объект для комментариев
+внутри ItemWBookingsDto
+ */
+
+import lombok.Builder;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+public class CommentDto {
+    private int id;
+    private String text;
+    private String authorName;
+    private LocalDateTime created;
+}

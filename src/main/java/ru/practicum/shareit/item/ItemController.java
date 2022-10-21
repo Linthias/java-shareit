@@ -14,13 +14,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import ru.practicum.shareit.item.dto.CommentDto;
+import ru.practicum.shareit.item.dto.CommentInputDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemWBookingsDto;
 import ru.practicum.shareit.item.exceptions.ItemAccessRestrictException;
 import ru.practicum.shareit.item.exceptions.ItemIncompleteDataException;
 import ru.practicum.shareit.item.exceptions.ItemNotFoundException;
 import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.user.exceptions.UserNotFoundException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +45,13 @@ public class ItemController {
         return itemService.addItem(item, userId);
     }
 
+    @PostMapping("/{itemId}/comment")
+    public CommentDto postComment(@RequestHeader("X-Sharer-User-Id") int userId, @PathVariable int itemId, @RequestBody CommentInputDto comment) {
+        log.info("POST /items/" + itemId + "/comment userId=" + userId);
+        comment.setCreated(LocalDateTime.now());
+        return itemService.addComment(comment, itemId, userId);
+    }
+
     @PatchMapping("/{itemId}")
     public ItemDto patchItem(@RequestHeader("X-Sharer-User-Id") int userId, @PathVariable int itemId, @RequestBody ItemDto item) {
         log.info("PATCH /items/" + itemId + " вещь обновлена");
@@ -48,19 +59,19 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ItemDto getItem(@RequestHeader(value = "X-Sharer-User-Id", required = false) int userId, @PathVariable int itemId) {
-        log.info("GET /items/" + itemId + "вещь получена");
-        return itemService.getItem(itemId);
+    public ItemWBookingsDto getItem(@RequestHeader(value = "X-Sharer-User-Id") int userId, @PathVariable int itemId) {
+        log.info("GET /items/" + itemId + " вещь получена");
+        return itemService.getItem(itemId, userId);
     }
 
     @GetMapping
-    public List<ItemDto> getUserItems(@RequestHeader("X-Sharer-User-Id") int userId) {
+    public List<ItemWBookingsDto> getUserItems(@RequestHeader("X-Sharer-User-Id") int userId) {
         log.info("GET /items получен список для пользователя " + userId);
         return itemService.getAllItems(userId);
     }
 
     @GetMapping("/search")
-    public List<ItemDto> searchForItems(@RequestHeader(value = "X-Sharer-User-Id", required = false) int userId, @RequestParam String text) {
+    public List<ItemDto> searchForItems(@RequestHeader(value = "X-Sharer-User-Id") int userId, @RequestParam String text) {
         log.info("GET /items/search получен список вещей");
         return itemService.searchItems(text);
     }
