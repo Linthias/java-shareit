@@ -2,11 +2,16 @@ package ru.practicum.shareit.booking.service;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoMapper;
 import ru.practicum.shareit.booking.dto.BookingInputDto;
 import ru.practicum.shareit.booking.exceptions.BookingAccessRestrictException;
+import ru.practicum.shareit.booking.exceptions.BookingBadPageParamsException;
 import ru.practicum.shareit.booking.exceptions.BookingIncompleteDataException;
 import ru.practicum.shareit.booking.exceptions.BookingNotFoundException;
 import ru.practicum.shareit.booking.exceptions.BookingUnsupportedStatusException;
@@ -16,14 +21,17 @@ import ru.practicum.shareit.booking.storage.BookingRepository;
 import ru.practicum.shareit.item.exceptions.ItemNotFoundException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.storage.ItemRepository;
+import ru.practicum.shareit.request.exceptions.ItemRequestBadPageParams;
 import ru.practicum.shareit.user.exceptions.UserNotFoundException;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.storage.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Getter
 @Component
@@ -117,17 +125,31 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDto> getUserBookings(int userId, String state) {
+    public List<BookingDto> getUserBookings(int userId, String state, Integer from, Integer size) {
         Optional<User> tempUser = userRepository.findById(userId);
         if (tempUser.isEmpty())
             throw new UserNotFoundException("Пользователь " + userId + " не найден");
 
-        List<BookingDto> result = new ArrayList<>();
-        List<Booking> tempBookingList = bookingRepository.findByBookerOrderByStartDesc(userId);
+        List<Booking> tempBookingList;
+
+        if (from == null && size == null)
+            tempBookingList = bookingRepository.findByBookerOrderByStartDesc(userId);
+        else if (from == null || size == null || from < 0 || size <= 0)
+            throw new BookingBadPageParamsException("Параметры: from=" + from + " size=" + size);
+        else {
+            Sort sortByStart = Sort.by(Sort.Direction.DESC, "start");
+            Pageable page = PageRequest.of(from, size, sortByStart);
+            Page<Booking> bookingPage = bookingRepository.findAll(page);
+
+            tempBookingList = bookingPage.get()
+                    .filter(booking -> booking.getBooker() == userId)
+                    .collect(Collectors.toList());
+        }
 
         // выборка по нужному состоянию.
         // т.к. в общем случае порядок бронирований (и их количество для одной вещи) заранее не известен,
         // то для заполнения данных для каждого dto объекта приходится запрашивать по одной вещи
+        List<BookingDto> result = new ArrayList<>();
         switch (state) {
             case "ALL":
                 for (Booking booking : tempBookingList) {
@@ -184,14 +206,14 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDto> getUserItemsBookings(int userId, String state) {
+    public List<BookingDto> getUserItemsBookings(int userId, String state, Integer from, Integer size) {
         Optional<User> tempUser = userRepository.findById(userId);
         if (tempUser.isEmpty())
             throw new UserNotFoundException("Пользователь " + userId + " не найден");
         if (itemRepository.countByOwner(userId) == 0)
             throw new ItemNotFoundException("У пользователя " + userId + " нет вещей");
 
-        List<BookingDto> result = new ArrayList<>();
+
         List<Item> tempItemList = itemRepository.findByOwner(userId);
 
         // список идентификаторов вещей пользователя
@@ -200,8 +222,25 @@ public class BookingServiceImpl implements BookingService {
             itemIds.add(item.getId());
         }
 
-        List<Booking> tempBookingList = bookingRepository.findByItemInOrderByStartDesc(itemIds);
+        List<Booking> tempBookingList;// = bookingRepository.findByItemInOrderByStartDesc(itemIds);
 
+        if (from == null && size == null)
+            tempBookingList = bookingRepository.findByItemInOrderByStartDesc(itemIds);
+        else if (from == null || size == null || from < 0 || size <= 0)
+            throw new ItemRequestBadPageParams("Параметры: from=" + from + " size=" + size);
+        else {
+            Sort sortByStart = Sort.by(Sort.Direction.DESC, "start");
+            Pageable page = PageRequest.of(from, size, sortByStart);
+            Page<Booking> bookingPage = bookingRepository.findAll(page);
+
+            HashSet<Integer> tempIds = new HashSet<>(itemIds);
+
+            tempBookingList = bookingPage.get()
+                    .filter(booking -> tempIds.contains(booking.getItem()))
+                    .collect(Collectors.toList());
+        }
+
+        List<BookingDto> result = new ArrayList<>();
         switch (state) {
             case "ALL":
                 for (Booking booking : tempBookingList) {

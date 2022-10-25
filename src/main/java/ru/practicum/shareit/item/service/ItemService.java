@@ -14,11 +14,11 @@ public interface ItemService {
 
     ItemWBookingsDto getItem(int id, int userId);
 
-    List<ItemWBookingsDto> getAllItems(int userId);
+    List<ItemWBookingsDto> getAllItems(int userId, Integer from, Integer size);
 
     ItemDto updateItem(ItemDto item, int itemId, int userId);
 
     void deleteItem(int id, int userId);
 
-    List<ItemDto> searchItems(String request);
+    List<ItemDto> searchItems(String request, int userId, Integer from, Integer size);
 }
