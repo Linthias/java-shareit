@@ -54,7 +54,9 @@ public class RequestServiceIntegralTest {
             .requestId(1)
             .build();
 
-    int requestId1, requestId2;
+    int requestId1,
+            requestId2;
+    
     @Test
     void getAuthorRequestsTest() throws Exception {
         itemOwner.setId(userService.addUser(itemOwner).getId());
