@@ -23,6 +23,7 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemDtoMapper;
 import ru.practicum.shareit.item.dto.ItemWBookingsDto;
 import ru.practicum.shareit.item.exceptions.ItemAccessRestrictException;
+import ru.practicum.shareit.item.exceptions.ItemBadPageParamsException;
 import ru.practicum.shareit.item.exceptions.ItemIncompleteDataException;
 import ru.practicum.shareit.item.exceptions.ItemNotFoundException;
 import ru.practicum.shareit.item.model.Comment;
@@ -136,7 +137,7 @@ public class ItemServiceImpl implements ItemService {
         if (from == null && size == null)
             temp = itemRepository.findByOwnerOrderById(userId);
         else if (from == null || size == null || from < 0 || size <= 0)
-            throw new RuntimeException();
+            throw new ItemBadPageParamsException("Параметры: from=" + from + " size=" + size);
         else {
             Sort sortById = Sort.by(Sort.Direction.ASC, "id");
             Pageable page = PageRequest.of(from, size, sortById);
@@ -264,7 +265,7 @@ public class ItemServiceImpl implements ItemService {
             if (from == null && size == null)
                 temp = itemRepository.search(request);
             else if (from == null || size == null || from < 0 || size <= 0)
-                throw new RuntimeException();
+                throw new ItemBadPageParamsException("Параметры: from=" + from + " size=" + size);
             else {
                 Sort sortById = Sort.by(Sort.Direction.ASC, "id");
                 Pageable page = PageRequest.of(from, size, sortById);

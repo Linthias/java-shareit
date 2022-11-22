@@ -75,7 +75,8 @@ public class BookingServiceImpl implements BookingService {
             throw new BookingAccessRestrictException("Вещь " + tempItem.get().getId() + " недоступна для бронирования");
 
         Booking result = BookingDtoMapper.toBooking(bookingDto, userId);
-        return BookingDtoMapper.toBookingDto(bookingRepository.save(result), tempItem.get().getName(), tempUser.get().getName());
+        return BookingDtoMapper.toBookingDto(bookingRepository.save(result),
+                tempItem.get().getName(), tempUser.get().getName());
     }
 
     @Override
@@ -222,7 +223,7 @@ public class BookingServiceImpl implements BookingService {
             itemIds.add(item.getId());
         }
 
-        List<Booking> tempBookingList;// = bookingRepository.findByItemInOrderByStartDesc(itemIds);
+        List<Booking> tempBookingList;
 
         if (from == null && size == null)
             tempBookingList = bookingRepository.findByItemInOrderByStartDesc(itemIds);
