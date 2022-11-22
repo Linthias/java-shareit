@@ -67,8 +67,13 @@ public class ItemJpaTest {
         owner1.setId(userRepository.save(owner1).getId());
         owner2.setId(userRepository.save(owner2).getId());
 
+        item1.setOwner(owner1.getId());
         item1.setId(itemRepository.save(item1).getId());
+
+        item2.setOwner(owner2.getId());
         item2.setId(itemRepository.save(item2).getId());
+
+        item3.setOwner(owner1.getId());
         item3.setId(itemRepository.save(item3).getId());
 
         TypedQuery<Item> query
