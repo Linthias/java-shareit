@@ -54,13 +54,14 @@ public class RequestServiceIntegralTest {
             .requestId(1)
             .build();
 
+    int requestId1, requestId2;
     @Test
     void getAuthorRequestsTest() throws Exception {
-        userService.addUser(itemOwner);
-        userService.addUser(requester);
+        itemOwner.setId(userService.addUser(itemOwner).getId());
+        requester.setId(userService.addUser(requester).getId());
 
-        requestService.addRequest(request, requester.getId());
-        itemService.addItem(item, itemOwner.getId());
+        requestId1 = requestService.addRequest(request, requester.getId()).getId();
+        item.setId(itemService.addItem(item, itemOwner.getId()).getId());
 
         List<ItemRequestDto> result = requestService.getAuthorRequests(requester.getId());
 
@@ -74,17 +75,17 @@ public class RequestServiceIntegralTest {
 
     @Test
     void getOtherUsersRequestsTest() throws Exception {
-        userService.addUser(itemOwner);
-        userService.addUser(requester);
+        itemOwner.setId(userService.addUser(itemOwner).getId());
+        requester.setId(userService.addUser(requester).getId());
 
-        requestService.addRequest(request, requester.getId() + 2);
-        itemService.addItem(item, itemOwner.getId() + 2);
-        requestService.addRequest(itemOwnersRequest, itemOwner.getId() + 2);
+        requestId1 = requestService.addRequest(request, requester.getId()).getId();
+        item.setId(itemService.addItem(item, itemOwner.getId()).getId());
+        requestId2 = requestService.addRequest(itemOwnersRequest, itemOwner.getId()).getId();
 
-        List<ItemRequestDto> result = requestService.getOtherUsersRequests(requester.getId() + 2, 0, 5);
+        List<ItemRequestDto> result = requestService.getOtherUsersRequests(requester.getId(), 0, 5);
 
         assertEquals(1, result.size());
-        assertEquals(3, result.get(0).getId());
+        assertEquals(requestId2, result.get(0).getId());
         assertEquals(itemOwnersRequest.getDescription(), result.get(0).getDescription());
         assertEquals(itemOwnersRequest.getCreated(), result.get(0).getCreated());
         assertEquals(0, result.get(0).getItems().size());

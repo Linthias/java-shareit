@@ -64,26 +64,26 @@ public class ItemJpaTest {
                 .owner(1)
                 .build();
 
-        userRepository.save(owner1);
-        userRepository.save(owner2);
+        owner1.setId(userRepository.save(owner1).getId());
+        owner2.setId(userRepository.save(owner2).getId());
 
-        itemRepository.save(item1);
-        itemRepository.save(item2);
-        itemRepository.save(item3);
+        item1.setId(itemRepository.save(item1).getId());
+        item2.setId(itemRepository.save(item2).getId());
+        item3.setId(itemRepository.save(item3).getId());
 
         TypedQuery<Item> query
                 = em.getEntityManager()
                 .createQuery("select i from Item i where i.id =: id", Item.class);
 
-        Item semiResult = query.setParameter("id", 1).getSingleResult();
+        Item semiResult = query.setParameter("id", item1.getId()).getSingleResult();
         assertEquals(item1.getName(), semiResult.getName());
         assertEquals(item1.getDescription(), semiResult.getDescription());
 
-        semiResult = query.setParameter("id", 2).getSingleResult();
+        semiResult = query.setParameter("id", item2.getId()).getSingleResult();
         assertEquals(item2.getName(), semiResult.getName());
         assertEquals(item2.getDescription(), semiResult.getDescription());
 
-        semiResult = query.setParameter("id", 3).getSingleResult();
+        semiResult = query.setParameter("id", item3.getId()).getSingleResult();
         assertEquals(item3.getName(), semiResult.getName());
         assertEquals(item3.getDescription(), semiResult.getDescription());
 
