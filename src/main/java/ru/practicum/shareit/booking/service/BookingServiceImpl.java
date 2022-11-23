@@ -228,7 +228,7 @@ public class BookingServiceImpl implements BookingService {
         if (from == null && size == null)
             tempBookingList = bookingRepository.findByItemInOrderByStartDesc(itemIds);
         else if (from == null || size == null || from < 0 || size <= 0)
-            throw new ItemRequestBadPageParams("Параметры: from=" + from + " size=" + size);
+            throw new BookingBadPageParamsException("Параметры: from=" + from + " size=" + size);
         else {
             Sort sortByStart = Sort.by(Sort.Direction.DESC, "start");
             Pageable page = PageRequest.of(from, size, sortByStart);

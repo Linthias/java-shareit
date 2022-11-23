@@ -232,7 +232,7 @@ public class ItemControllerTest {
     void searchForItemsTest() throws Exception {
         when(service.searchItems(anyString(), anyInt(), anyInt(), anyInt())).thenReturn(List.of(minItem));
 
-        mvc.perform(get("/items")
+        mvc.perform(get("/items/search")
                         .header("X-Sharer-User-Id", 1)
                         .param("text", "request")
                         .param("from", "0")

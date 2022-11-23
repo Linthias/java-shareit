@@ -7,6 +7,7 @@ import org.springframework.data.domain.Sort;
 import ru.practicum.shareit.booking.dto.BookerDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingInputDto;
+import ru.practicum.shareit.booking.exceptions.BookingAccessRestrictException;
 import ru.practicum.shareit.booking.exceptions.BookingBadPageParamsException;
 import ru.practicum.shareit.booking.exceptions.BookingIncompleteDataException;
 import ru.practicum.shareit.booking.exceptions.BookingNotFoundException;
@@ -17,6 +18,7 @@ import ru.practicum.shareit.booking.service.BookingService;
 import ru.practicum.shareit.booking.service.BookingServiceImpl;
 import ru.practicum.shareit.booking.storage.BookingRepository;
 import ru.practicum.shareit.item.dto.MinItemDto;
+import ru.practicum.shareit.item.exceptions.ItemNotFoundException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.user.exceptions.UserNotFoundException;
@@ -103,7 +105,7 @@ public class BookingServiceUnitTest {
     }
 
     @Test
-    void addBookingTestFail() throws Exception {
+    void addBookingIncompleteDataTest() throws Exception {
         BookingInputDto localInput = new BookingInputDto(1,
                 null,
                 LocalDateTime.of(2023, 6, 29, 10, 15));
@@ -112,6 +114,90 @@ public class BookingServiceUnitTest {
             result = bookingService.addBooking(localInput, user.getId());
         } catch (Exception e) {
             assertEquals(BookingIncompleteDataException.class, e.getClass());
+        }
+
+        localInput.setStart(LocalDateTime.of(2023, 6, 29, 10, 0));
+        localInput.setEnd(null);
+
+        try {
+            result = bookingService.addBooking(localInput, user.getId());
+        } catch (Exception e) {
+            assertEquals(BookingIncompleteDataException.class, e.getClass());
+        }
+
+        localInput.setStart(LocalDateTime.of(2023, 6, 29, 10, 0));
+        localInput.setEnd(LocalDateTime.of(2022, 6, 29, 10, 15));
+
+        try {
+            result = bookingService.addBooking(localInput, user.getId());
+        } catch (Exception e) {
+            assertEquals(BookingIncompleteDataException.class, e.getClass());
+        }
+
+        localInput.setStart(LocalDateTime.of(2022, 6, 29, 10, 0));
+        localInput.setEnd(LocalDateTime.of(2023, 6, 29, 10, 15));
+
+        try {
+            result = bookingService.addBooking(localInput, user.getId());
+        } catch (Exception e) {
+            assertEquals(BookingIncompleteDataException.class, e.getClass());
+        }
+    }
+
+    @Test
+    void addBookingUserNotFoundTest() throws Exception {
+        when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
+
+        try {
+            result = bookingService.addBooking(input, user.getId());
+        } catch (Exception e) {
+            assertEquals(UserNotFoundException.class, e.getClass());
+        }
+    }
+
+    @Test
+    void addBookingItemNotFoundTest() throws Exception {
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(itemRepository.findById(input.getItemId())).thenReturn(Optional.empty());
+
+        try {
+            result = bookingService.addBooking(input, user.getId());
+        } catch (Exception e) {
+            assertEquals(ItemNotFoundException.class, e.getClass());
+        }
+    }
+
+    @Test
+    void addBookingByOwnerTest() throws Exception {
+        when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
+        when(itemRepository.findById(input.getItemId())).thenReturn(Optional.of(item));
+
+        try {
+            result = bookingService.addBooking(input, item.getOwner());
+        } catch (Exception e) {
+            assertEquals(UserNotFoundException.class, e.getClass());
+        }
+    }
+
+    @Test
+    void addBookingAccessRestrictTest() throws Exception {
+        Item localItem = Item.builder()
+                .id(1)
+                .name("item name")
+                .description("item description")
+                .available(false)
+                .owner(4)
+                .requestId(5)
+                .build();
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(itemRepository.findById(input.getItemId())).thenReturn(Optional.of(localItem));
+        when(bookingRepository.save(any())).thenReturn(semiResult);
+
+        try {
+            result = bookingService.addBooking(input, user.getId());
+        } catch (Exception e) {
+            assertEquals(BookingAccessRestrictException.class, e.getClass());
         }
     }
 
@@ -151,7 +237,42 @@ public class BookingServiceUnitTest {
     }
 
     @Test
-    void approveBookingTestFail() throws Exception {
+    void approveBookingRejectTest() throws Exception {
+        Booking localSemiResult = Booking.builder()
+                .id(2)
+                .start(LocalDateTime.of(2023, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 15))
+                .item(1)
+                .booker(3)
+                .status(BookingStatus.REJECTED)
+                .build();
+
+        BookingDto localOutput = BookingDto.builder()
+                .id(2)
+                .start(LocalDateTime.of(2023, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 15))
+                .item(new MinItemDto(1, "item name"))
+                .booker(new BookerDto(3, "owner name"))
+                .status(BookingStatus.REJECTED)
+                .build();
+
+        when(bookingRepository.findById(anyInt())).thenReturn(Optional.of(semiResult));
+        when(itemRepository.findById(anyInt())).thenReturn(Optional.of(item));
+        when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
+        when(bookingRepository.save(any())).thenReturn(localSemiResult);
+
+        result = bookingService.approveBooking(semiResult.getId(), item.getOwner(), false);
+
+        assertEquals(localOutput.getId(), result.getId());
+        assertEquals(localOutput.getStart(), result.getStart());
+        assertEquals(localOutput.getEnd(), result.getEnd());
+        assertEquals(localOutput.getItem().getName(), result.getItem().getName());
+        assertEquals(localOutput.getBooker().getName(), result.getBooker().getName());
+        assertEquals(localOutput.getStatus(), result.getStatus());
+    }
+
+    @Test
+    void approveBookingBookingNotFoundTest() throws Exception {
         when(bookingRepository.findById(anyInt())).thenReturn(Optional.empty());
 
         try {
@@ -221,28 +342,70 @@ public class BookingServiceUnitTest {
 
     @Test
     void getUserBookingsCurrentTest() throws Exception {
+        BookingDto localOutput = BookingDto.builder()
+                .id(2)
+                .start(LocalDateTime.of(2022, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 15))
+                .item(new MinItemDto(1, "item name"))
+                .booker(new BookerDto(3, "user name"))
+                .status(BookingStatus.WAITING)
+                .build();
+
+        Booking localSemiResult = Booking.builder()
+                .id(2)
+                .start(LocalDateTime.of(2022, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 15))
+                .item(1)
+                .booker(3)
+                .status(BookingStatus.WAITING)
+                .build();
+
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(bookingRepository
                 .findAll(PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "start"))))
-                .thenReturn(new PageImpl<>(List.of(semiResult)));
+                .thenReturn(new PageImpl<>(List.of(localSemiResult)));
         when(itemRepository.findById(anyInt())).thenReturn(Optional.of(item));
 
         listResult = bookingService.getUserBookings(user.getId(), "CURRENT", 0, 5);
 
-        assertEquals(0, listResult.size());
+        assertEquals(1, listResult.size());
+        assertEquals(localOutput.getId(), listResult.get(0).getId());
+        assertEquals(localOutput.getItem().getName(), listResult.get(0).getItem().getName());
+        assertEquals(localOutput.getBooker().getName(), listResult.get(0).getBooker().getName());
     }
 
     @Test
     void getUserBookingsPastTest() throws Exception {
+        BookingDto localOutput = BookingDto.builder()
+                .id(2)
+                .start(LocalDateTime.of(2022, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2022, 6, 29, 10, 15))
+                .item(new MinItemDto(1, "item name"))
+                .booker(new BookerDto(3, "user name"))
+                .status(BookingStatus.WAITING)
+                .build();
+
+        Booking localSemiResult = Booking.builder()
+                .id(2)
+                .start(LocalDateTime.of(2022, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2022, 6, 29, 10, 15))
+                .item(1)
+                .booker(3)
+                .status(BookingStatus.WAITING)
+                .build();
+
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(bookingRepository
                 .findAll(PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "start"))))
-                .thenReturn(new PageImpl<>(List.of(semiResult)));
+                .thenReturn(new PageImpl<>(List.of(localSemiResult)));
         when(itemRepository.findById(anyInt())).thenReturn(Optional.of(item));
 
         listResult = bookingService.getUserBookings(user.getId(), "PAST", 0, 5);
 
-        assertEquals(0, listResult.size());
+        assertEquals(1, listResult.size());
+        assertEquals(localOutput.getId(), listResult.get(0).getId());
+        assertEquals(localOutput.getItem().getName(), listResult.get(0).getItem().getName());
+        assertEquals(localOutput.getBooker().getName(), listResult.get(0).getBooker().getName());
     }
 
     @Test
@@ -279,25 +442,62 @@ public class BookingServiceUnitTest {
 
     @Test
     void getUserBookingsRejectedTest() throws Exception {
+        BookingDto localOutput = BookingDto.builder()
+                .id(2)
+                .start(LocalDateTime.of(2023, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 15))
+                .item(new MinItemDto(1, "item name"))
+                .booker(new BookerDto(3, "user name"))
+                .status(BookingStatus.REJECTED)
+                .build();
+
+        Booking localSemiResult = Booking.builder()
+                .id(2)
+                .start(LocalDateTime.of(2023, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 15))
+                .item(1)
+                .booker(3)
+                .status(BookingStatus.REJECTED)
+                .build();
+
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(bookingRepository
                 .findAll(PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "start"))))
-                .thenReturn(new PageImpl<>(List.of(semiResult)));
+                .thenReturn(new PageImpl<>(List.of(localSemiResult)));
         when(itemRepository.findById(anyInt())).thenReturn(Optional.of(item));
 
         listResult = bookingService.getUserBookings(user.getId(), "REJECTED", 0, 5);
 
-        assertEquals(0, listResult.size());
+        assertEquals(1, listResult.size());
+        assertEquals(localOutput.getId(), listResult.get(0).getId());
+        assertEquals(localOutput.getItem().getName(), listResult.get(0).getItem().getName());
+        assertEquals(localOutput.getBooker().getName(), listResult.get(0).getBooker().getName());
+        assertEquals(localOutput.getStatus(), listResult.get(0).getStatus());
     }
 
     @Test
-    void getUserBookingsTestFail() throws Exception {
+    void getUserBookingsBadPageParamsTest() throws Exception {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
         try {
             listResult = bookingService.getUserBookings(user.getId(), "REJECTED", 0, null);
         } catch (Exception e) {
             assertEquals(BookingBadPageParamsException.class, e.getClass());
+        }
+    }
+
+    @Test
+    void getUserBookingsBadStateTest() throws Exception {
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(bookingRepository
+                .findAll(PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "start"))))
+                .thenReturn(new PageImpl<>(List.of(semiResult)));
+        when(itemRepository.findById(anyInt())).thenReturn(Optional.of(item));
+
+        try {
+            listResult = bookingService.getUserBookings(user.getId(), "BAD STATE", 0, 5);
+        } catch (Exception e) {
+            assertEquals(BookingUnsupportedStatusException.class, e.getClass());
         }
     }
 
@@ -333,32 +533,72 @@ public class BookingServiceUnitTest {
 
     @Test
     void getUserItemsBookingsCurrentTest() throws Exception {
+        BookingDto localOutput = BookingDto.builder()
+                .id(2)
+                .start(LocalDateTime.of(2022, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 15))
+                .item(new MinItemDto(1, "item name"))
+                .booker(new BookerDto(3, "user name"))
+                .status(BookingStatus.WAITING)
+                .build();
+
+        Booking localSemiResult = Booking.builder()
+                .id(2)
+                .start(LocalDateTime.of(2022, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 15))
+                .item(1)
+                .booker(3)
+                .status(BookingStatus.WAITING)
+                .build();
+
         when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
         when(itemRepository.countByOwner(owner.getId())).thenReturn(1);
         when(itemRepository.findByOwner(owner.getId())).thenReturn(List.of(item));
         when(bookingRepository
                 .findAll(PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "start"))))
-                .thenReturn(new PageImpl<>(List.of(semiResult)));
+                .thenReturn(new PageImpl<>(List.of(localSemiResult)));
         when(itemRepository.findById(anyInt())).thenReturn(Optional.of(item));
 
         listResult = bookingService.getUserItemsBookings(owner.getId(), "CURRENT", 0, 5);
 
-        assertEquals(0, listResult.size());
+        assertEquals(1, listResult.size());
+        assertEquals(localOutput.getId(), listResult.get(0).getId());
+        assertEquals(localOutput.getItem().getName(), listResult.get(0).getItem().getName());
     }
 
     @Test
     void getUserItemsBookingsPastTest() throws Exception {
+        BookingDto localOutput = BookingDto.builder()
+                .id(2)
+                .start(LocalDateTime.of(2022, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2022, 6, 29, 10, 15))
+                .item(new MinItemDto(1, "item name"))
+                .booker(new BookerDto(3, "user name"))
+                .status(BookingStatus.WAITING)
+                .build();
+
+        Booking localSemiResult = Booking.builder()
+                .id(2)
+                .start(LocalDateTime.of(2022, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2022, 6, 29, 10, 15))
+                .item(1)
+                .booker(3)
+                .status(BookingStatus.WAITING)
+                .build();
+
         when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
         when(itemRepository.countByOwner(owner.getId())).thenReturn(1);
         when(itemRepository.findByOwner(owner.getId())).thenReturn(List.of(item));
         when(bookingRepository
                 .findAll(PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "start"))))
-                .thenReturn(new PageImpl<>(List.of(semiResult)));
+                .thenReturn(new PageImpl<>(List.of(localSemiResult)));
         when(itemRepository.findById(anyInt())).thenReturn(Optional.of(item));
 
         listResult = bookingService.getUserItemsBookings(owner.getId(), "PAST", 0, 5);
 
-        assertEquals(0, listResult.size());
+        assertEquals(1, listResult.size());
+        assertEquals(localOutput.getId(), listResult.get(0).getId());
+        assertEquals(localOutput.getItem().getName(), listResult.get(0).getItem().getName());
     }
 
     @Test
@@ -397,21 +637,54 @@ public class BookingServiceUnitTest {
 
     @Test
     void getUserItemsBookingsRejectedTest() throws Exception {
+        BookingDto localOutput = BookingDto.builder()
+                .id(2)
+                .start(LocalDateTime.of(2023, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 15))
+                .item(new MinItemDto(1, "item name"))
+                .booker(new BookerDto(3, "user name"))
+                .status(BookingStatus.REJECTED)
+                .build();
+
+        Booking localSemiResult = Booking.builder()
+                .id(2)
+                .start(LocalDateTime.of(2023, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 15))
+                .item(1)
+                .booker(3)
+                .status(BookingStatus.REJECTED)
+                .build();
+
         when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
         when(itemRepository.countByOwner(owner.getId())).thenReturn(1);
         when(itemRepository.findByOwner(owner.getId())).thenReturn(List.of(item));
         when(bookingRepository
                 .findAll(PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "start"))))
-                .thenReturn(new PageImpl<>(List.of(semiResult)));
+                .thenReturn(new PageImpl<>(List.of(localSemiResult)));
         when(itemRepository.findById(anyInt())).thenReturn(Optional.of(item));
 
         listResult = bookingService.getUserItemsBookings(owner.getId(), "REJECTED", 0, 5);
 
-        assertEquals(0, listResult.size());
+        assertEquals(1, listResult.size());
+        assertEquals(localOutput.getId(), listResult.get(0).getId());
+        assertEquals(localOutput.getItem().getName(), listResult.get(0).getItem().getName());
     }
 
     @Test
-    void getUserItemsBookingsTestFail() throws Exception {
+    void getUserItemsBookingsBadPageParamsTest() throws Exception {
+        when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
+        when(itemRepository.countByOwner(owner.getId())).thenReturn(1);
+        when(itemRepository.findByOwner(owner.getId())).thenReturn(List.of(item));
+
+        try {
+            listResult = bookingService.getUserItemsBookings(owner.getId(), "REJECTED", 0, null);
+        } catch (Exception e) {
+            assertEquals(BookingBadPageParamsException.class, e.getClass());
+        }
+    }
+
+    @Test
+    void getUserItemsBookingsBadStateTest() throws Exception {
         when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
         when(itemRepository.countByOwner(owner.getId())).thenReturn(1);
         when(itemRepository.findByOwner(owner.getId())).thenReturn(List.of(item));

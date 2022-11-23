@@ -188,11 +188,182 @@ public class ItemServiceUnitTest {
         assertEquals(output.getDescription(), fullResult.getDescription());
         assertEquals(output.getAvailable(), fullResult.getAvailable());
         assertEquals(output.getLastBooking().getId(), fullResult.getLastBooking().getId());
+        assertEquals(null, fullResult.getNextBooking());
         assertEquals(output.getComments().size(), fullResult.getComments().size());
     }
 
     @Test
-    void getItemTestFail() throws Exception {
+    void getItemSingleBookingInFutureTest() throws Exception {
+        Booking localBooking = Booking.builder()
+                .id(6)
+                .start(LocalDateTime.of(2023, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 15))
+                .item(1)
+                .booker(5)
+                .status(BookingStatus.APPROVED)
+                .build();
+
+        ItemWBookingsDto localOutput = ItemWBookingsDto.builder()
+                .id(1)
+                .name("item name")
+                .description("item description")
+                .available(true)
+                .nextBooking(new MinBookingDto(localBooking.getId(), booker.getId()))
+                .comments(List.of(commentDto))
+                .build();
+
+        when(itemRepository.findById(item.getId())).thenReturn(Optional.of(item));
+        when(bookingRepository
+                .findByItemInOrderByStartAsc(Collections.singletonList(item.getId())))
+                .thenReturn(List.of(localBooking));
+        when(commentRepository.findByItem(item.getId())).thenReturn(List.of(comment));
+        when(userRepository.findById(comment.getAuthor())).thenReturn(Optional.of(booker));
+
+        fullResult = itemService.getItem(item.getId(), owner.getId());
+
+        assertEquals(localOutput.getId(), fullResult.getId());
+        assertEquals(localOutput.getName(), fullResult.getName());
+        assertEquals(localOutput.getDescription(), fullResult.getDescription());
+        assertEquals(localOutput.getAvailable(), fullResult.getAvailable());
+        assertEquals(null, fullResult.getLastBooking());
+        assertEquals(localOutput.getNextBooking().getId(), fullResult.getNextBooking().getId());
+        assertEquals(localOutput.getComments().size(), fullResult.getComments().size());
+    }
+
+    @Test
+    void getItemMoreThanOneBookingInPastAndFutureTest() throws Exception {
+        Booking localBooking1 = Booking.builder()
+                .id(6)
+                .start(LocalDateTime.of(2022, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2022, 6, 29, 10, 15))
+                .item(1)
+                .booker(5)
+                .status(BookingStatus.APPROVED)
+                .build();
+
+        Booking localBooking2 = Booking.builder()
+                .id(7)
+                .start(LocalDateTime.of(2023, 6, 29, 10, 20))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 25))
+                .item(1)
+                .booker(4)
+                .status(BookingStatus.APPROVED)
+                .build();
+
+        ItemWBookingsDto localOutput = ItemWBookingsDto.builder()
+                .id(1)
+                .name("item name")
+                .description("item description")
+                .available(true)
+                .lastBooking(new MinBookingDto(localBooking1.getId(), booker.getId()))
+                .nextBooking(new MinBookingDto(localBooking2.getId(), owner.getId()))
+                .comments(List.of(commentDto))
+                .build();
+
+        when(itemRepository.findById(item.getId())).thenReturn(Optional.of(item));
+        when(bookingRepository
+                .findByItemInOrderByStartAsc(Collections.singletonList(item.getId())))
+                .thenReturn(List.of(localBooking1, localBooking2));
+        when(commentRepository.findByItem(item.getId())).thenReturn(List.of(comment));
+        when(userRepository.findById(comment.getAuthor())).thenReturn(Optional.of(booker));
+
+        fullResult = itemService.getItem(item.getId(), owner.getId());
+
+        assertEquals(localOutput.getId(), fullResult.getId());
+        assertEquals(localOutput.getName(), fullResult.getName());
+        assertEquals(localOutput.getDescription(), fullResult.getDescription());
+        assertEquals(localOutput.getAvailable(), fullResult.getAvailable());
+        assertEquals(localOutput.getLastBooking().getId(), fullResult.getLastBooking().getId());
+        assertEquals(localOutput.getNextBooking().getId(), fullResult.getNextBooking().getId());
+        assertEquals(localOutput.getComments().size(), fullResult.getComments().size());
+    }
+
+    @Test
+    void getItemMoreThanOneBookingInFutureTest() throws Exception {
+        Booking localBooking1 = Booking.builder()
+                .id(6)
+                .start(LocalDateTime.of(2023, 6, 29, 10, 0))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 15))
+                .item(1)
+                .booker(5)
+                .status(BookingStatus.APPROVED)
+                .build();
+
+        Booking localBooking2 = Booking.builder()
+                .id(7)
+                .start(LocalDateTime.of(2023, 6, 29, 10, 20))
+                .end(LocalDateTime.of(2023, 6, 29, 10, 25))
+                .item(1)
+                .booker(4)
+                .status(BookingStatus.APPROVED)
+                .build();
+
+        ItemWBookingsDto localOutput = ItemWBookingsDto.builder()
+                .id(1)
+                .name("item name")
+                .description("item description")
+                .available(true)
+                .nextBooking(new MinBookingDto(localBooking1.getId(), owner.getId()))
+                .comments(List.of(commentDto))
+                .build();
+
+        when(itemRepository.findById(item.getId())).thenReturn(Optional.of(item));
+        when(bookingRepository
+                .findByItemInOrderByStartAsc(Collections.singletonList(item.getId())))
+                .thenReturn(List.of(localBooking1, localBooking2));
+        when(commentRepository.findByItem(item.getId())).thenReturn(List.of(comment));
+        when(userRepository.findById(comment.getAuthor())).thenReturn(Optional.of(booker));
+
+        fullResult = itemService.getItem(item.getId(), owner.getId());
+
+        assertEquals(localOutput.getId(), fullResult.getId());
+        assertEquals(localOutput.getName(), fullResult.getName());
+        assertEquals(localOutput.getDescription(), fullResult.getDescription());
+        assertEquals(localOutput.getAvailable(), fullResult.getAvailable());
+        assertEquals(null, fullResult.getLastBooking());
+        assertEquals(localOutput.getNextBooking().getId(), fullResult.getNextBooking().getId());
+        assertEquals(localOutput.getComments().size(), fullResult.getComments().size());
+    }
+
+    @Test
+    void getItemNotByOwnerTest() throws Exception {
+        when(itemRepository.findById(item.getId())).thenReturn(Optional.of(item));
+        when(commentRepository.findByItem(item.getId())).thenReturn(List.of(comment));
+        when(userRepository.findById(comment.getAuthor())).thenReturn(Optional.of(booker));
+
+        fullResult = itemService.getItem(item.getId(), booker.getId());
+
+        assertEquals(output.getId(), fullResult.getId());
+        assertEquals(output.getName(), fullResult.getName());
+        assertEquals(output.getDescription(), fullResult.getDescription());
+        assertEquals(output.getAvailable(), fullResult.getAvailable());
+        assertEquals(null, fullResult.getLastBooking());
+        assertEquals(null, fullResult.getNextBooking());
+        assertEquals(output.getComments().size(), fullResult.getComments().size());
+    }
+
+    @Test
+    void getItemNoBookingsTest() throws Exception {
+        when(itemRepository.findById(item.getId())).thenReturn(Optional.of(item));
+        when(bookingRepository
+                .findByItemInOrderByStartAsc(Collections.singletonList(item.getId())))
+                .thenReturn(List.of());
+        when(commentRepository.findByItem(item.getId())).thenReturn(List.of(comment));
+        when(userRepository.findById(comment.getAuthor())).thenReturn(Optional.of(booker));
+
+        fullResult = itemService.getItem(item.getId(), owner.getId());
+
+        assertEquals(output.getId(), fullResult.getId());
+        assertEquals(output.getName(), fullResult.getName());
+        assertEquals(output.getDescription(), fullResult.getDescription());
+        assertEquals(output.getAvailable(), fullResult.getAvailable());
+        assertEquals(null, fullResult.getLastBooking());
+        assertEquals(null, fullResult.getNextBooking());
+        assertEquals(output.getComments().size(), fullResult.getComments().size());
+    }
+
+    @Test
+    void getItemItemNotFoundTest() throws Exception {
         when(itemRepository.findById(item.getId())).thenReturn(Optional.empty());
 
         try {
