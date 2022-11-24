@@ -1,7 +1,7 @@
 package ru.practicum.shareit.request.service;
 
 import lombok.Getter;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @Getter
 @Component
 public class ItemRequestServiceImpl implements ItemRequestService {
@@ -35,21 +36,12 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
 
-    @Autowired
-    public ItemRequestServiceImpl(ItemRequestRepository itemRequestRepository,
-                                  UserRepository userRepository,
-                                  ItemRepository itemRepository) {
-        this.itemRequestRepository = itemRequestRepository;
-        this.userRepository = userRepository;
-        this.itemRepository = itemRepository;
-    }
-
     @Override
     public ItemRequestDto addRequest(ItemRequestInputDto inputDto, int userId) {
         if (!userRepository.existsById(userId))
             throw new UserNotFoundException("Пользователь " + userId + " не найден");
         if (inputDto.getDescription() == null || inputDto.getDescription().equals(""))
-            throw new ItemRequestBadDataException("Пустое описание");
+            throw new ItemRequestBadDataException("Пустое описание в новом запросе от пользователя " + userId);
 
         return ItemRequestDtoMapper.toItemRequestDto(
                 itemRequestRepository.save(ItemRequestDtoMapper.toItemRequest(inputDto, userId)), null);
