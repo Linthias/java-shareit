@@ -1,7 +1,7 @@
 package ru.practicum.shareit.booking;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingInputDto;
 import ru.practicum.shareit.booking.exceptions.BookingAccessRestrictException;
+import ru.practicum.shareit.booking.exceptions.BookingBadPageParamsException;
 import ru.practicum.shareit.booking.exceptions.BookingIncompleteDataException;
 import ru.practicum.shareit.booking.exceptions.BookingNotFoundException;
 import ru.practicum.shareit.booking.exceptions.BookingUnsupportedStatusException;
@@ -27,19 +28,12 @@ import ru.practicum.shareit.user.exceptions.UserNotFoundException;
 import java.util.List;
 import java.util.Map;
 
+@RequiredArgsConstructor
 @Slf4j
 @RestController
 @RequestMapping(path = "/bookings")
 public class BookingController {
     private final BookingService bookingService;
-
-
-    @Autowired
-    public BookingController(BookingService bookingService) {
-        this.bookingService = bookingService;
-    }
-
-
 
     @PostMapping
     public BookingDto postBooking(@RequestHeader("X-Sharer-User-Id") int userId,
@@ -63,26 +57,30 @@ public class BookingController {
 
     @GetMapping
     public List<BookingDto> getUserBookings(@RequestHeader("X-Sharer-User-Id") int userId,
-                                            @RequestParam(required = false) String state) {
+                                            @RequestParam(required = false) String state,
+                                            @RequestParam(required = false) Integer from,
+                                            @RequestParam(required = false) Integer size) {
         log.info("GET /bookings/ userId=" + userId + " state=" + state);
 
         // параметр по умолчанию
         if (state == null)
             state = "ALL";
 
-        return bookingService.getUserBookings(userId, state);
+        return bookingService.getUserBookings(userId, state, from, size);
     }
 
     @GetMapping("/owner")
     public List<BookingDto> getUserItemsBookings(@RequestHeader("X-Sharer-User-Id") int userId,
-                                                 @RequestParam(required = false) String state) {
+                                                 @RequestParam(required = false) String state,
+                                                 @RequestParam(required = false) Integer from,
+                                                 @RequestParam(required = false) Integer size) {
         log.info("GET /bookings/owner userId=" + userId + " state=" + state);
 
         // параметр по умолчанию
         if (state == null)
             state = "ALL";
 
-        return bookingService.getUserItemsBookings(userId, state);
+        return bookingService.getUserItemsBookings(userId, state, from, size);
     }
 
     @ExceptionHandler(BookingIncompleteDataException.class)
@@ -94,6 +92,12 @@ public class BookingController {
     @ExceptionHandler(BookingAccessRestrictException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleAccessRestriction(BookingAccessRestrictException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler(BookingBadPageParamsException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleAccessRestriction(BookingBadPageParamsException e) {
         return Map.of("error", e.getMessage());
     }
 

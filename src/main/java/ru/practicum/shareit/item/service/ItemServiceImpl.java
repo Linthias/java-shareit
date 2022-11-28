@@ -7,7 +7,11 @@ package ru.practicum.shareit.item.service;
  */
 
 import lombok.Getter;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.booking.dto.MinBookingDto;
 import ru.practicum.shareit.booking.model.Booking;
@@ -19,6 +23,7 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemDtoMapper;
 import ru.practicum.shareit.item.dto.ItemWBookingsDto;
 import ru.practicum.shareit.item.exceptions.ItemAccessRestrictException;
+import ru.practicum.shareit.item.exceptions.ItemBadPageParamsException;
 import ru.practicum.shareit.item.exceptions.ItemIncompleteDataException;
 import ru.practicum.shareit.item.exceptions.ItemNotFoundException;
 import ru.practicum.shareit.item.model.Comment;
@@ -34,7 +39,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @Getter
 @Component
 public class ItemServiceImpl implements ItemService {
@@ -42,17 +49,6 @@ public class ItemServiceImpl implements ItemService {
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
-
-    @Autowired
-    public ItemServiceImpl(ItemRepository itemRepository,
-                           UserRepository userRepository,
-                           BookingRepository bookingRepository,
-                           CommentRepository commentRepository) {
-        this.itemRepository = itemRepository;
-        this.userRepository = userRepository;
-        this.bookingRepository = bookingRepository;
-        this.commentRepository = commentRepository;
-    }
 
     @Override
     public ItemDto addItem(ItemDto itemDto, int userId) {
@@ -120,12 +116,29 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemWBookingsDto> getAllItems(int userId) {
+    public List<ItemWBookingsDto> getAllItems(int userId, Integer from, Integer size) {
         if (!userRepository.existsById(userId))
             throw new UserNotFoundException("Пользователь " + userId + " не найден");
 
-        List<Item> temp = itemRepository.findByOwnerOrderById(userId);
+        List<Item> temp;
+
         List<ItemWBookingsDto> result = new ArrayList<>();
+
+        if (from == null && size == null)
+            temp = itemRepository.findByOwnerOrderById(userId);
+        else if (from == null || size == null || from < 0 || size <= 0)
+            throw new ItemBadPageParamsException("Параметры: from=" + from + " size=" + size);
+        else {
+            Sort sortById = Sort.by(Sort.Direction.ASC, "id");
+            Pageable page = PageRequest.of(from, size, sortById);
+            Page<Item> itemPage = itemRepository.findAll(page);
+
+            temp = itemPage.get()
+                    .filter(item -> item.getAvailable().equals(true))
+                    .filter(item -> item.getOwner() == userId)
+                    .collect(Collectors.toList());
+        }
+
         for (Item item : temp) {
             result.add(findCloseBookings(item));
         }
@@ -220,20 +233,42 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public void deleteItem(int id, int userId) {
-        if (!itemRepository.existsById(id))
+        Optional<Item> temp = itemRepository.findById(id);
+        if (temp.isEmpty())
             throw new ItemNotFoundException("Вещь " + id + " не найдена");
-        if (itemRepository.findById(id).get().getOwner() != userId)
+        if (temp.get().getOwner() != userId)
             throw new ItemAccessRestrictException("Только владелец вещи может ее удалить");
 
         itemRepository.deleteById(id);
     }
 
     @Override
-    public List<ItemDto> searchItems(String request) {
+    public List<ItemDto> searchItems(String request, int userId, Integer from, Integer size) {
+        if (!userRepository.existsById(userId))
+            throw new UserNotFoundException("Пользователь " + userId + " не найден");
+
         List<ItemDto> result = new ArrayList<>();
 
         if (!"".equals(request)) {
-            List<Item> temp = itemRepository.search(request);
+            List<Item> temp;
+
+            if (from == null && size == null)
+                temp = itemRepository.search(request);
+            else if (from == null || size == null || from < 0 || size <= 0)
+                throw new ItemBadPageParamsException("Параметры: from=" + from + " size=" + size);
+            else {
+                Sort sortById = Sort.by(Sort.Direction.ASC, "id");
+                Pageable page = PageRequest.of(from, size, sortById);
+                Page<Item> itemPage = itemRepository.findAll(page);
+
+                temp = itemPage.get()
+                        .filter(item -> item.getAvailable().equals(true))
+                        .filter(item -> item.getName().toLowerCase().contains(request.toLowerCase())
+                                || item.getDescription().toLowerCase().contains(request.toLowerCase()))
+                        .filter(item -> item.getOwner() == userId)
+                        .collect(Collectors.toList());
+            }
+
             for (Item item : temp) {
                 result.add(ItemDtoMapper.toItemDto(item));
             }

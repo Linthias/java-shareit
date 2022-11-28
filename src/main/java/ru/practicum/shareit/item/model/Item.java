@@ -34,4 +34,10 @@ public class Item {
 
     @Column(name = "owner_id", nullable = false)
     private int owner;
+
+    // здесь используется Integer, а не int,
+    // т.к. вещь может быть не привязана к запросу
+    // и иметь здесь null
+    @Column(name = "request_id")
+    private Integer requestId;
 }
