@@ -39,7 +39,7 @@ public class ItemController {
     @PostMapping
     public ItemDto postItem(@RequestHeader("X-Sharer-User-Id") int userId,
                             @RequestBody ItemDto item) {
-        log.info("POST /items вещь добавлена");
+        log.info("POST /items вещь добавлена userId=" + userId);
         return itemService.addItem(item, userId);
     }
 
@@ -56,14 +56,14 @@ public class ItemController {
     public ItemDto patchItem(@RequestHeader("X-Sharer-User-Id") int userId,
                              @PathVariable int itemId,
                              @RequestBody ItemDto item) {
-        log.info("PATCH /items/" + itemId + " вещь обновлена");
+        log.info("PATCH /items/" + itemId + " вещь обновлена userId=" + userId);
         return itemService.updateItem(item, itemId, userId);
     }
 
     @GetMapping("/{itemId}")
     public ItemWBookingsDto getItem(@RequestHeader(value = "X-Sharer-User-Id") int userId,
                                     @PathVariable int itemId) {
-        log.info("GET /items/" + itemId + " вещь получена");
+        log.info("GET /items/" + itemId + " вещь получена userId=" + userId);
         return itemService.getItem(itemId, userId);
     }
 
