@@ -40,19 +40,19 @@ public class UserController {
 
     @GetMapping("/{userId}")
     public ResponseEntity<Object> getUser(@PathVariable long userId) {
-        log.info("Get user, userId={}", userId);
+        log.info("Getting user, userId={}", userId);
         return userClient.getUser(userId);
     }
 
     @GetMapping
     public ResponseEntity<Object> getAllUsers() {
-        log.info("Get all users");
+        log.info("Getting all users");
         return userClient.getAllUsers();
     }
 
     @DeleteMapping("/{userId}")
     public ResponseEntity<Object> deleteUser(@PathVariable long userId) {
-        log.info("Get all users");
+        log.info("Deleting one user");
         return userClient.deleteUser(userId);
     }
 }

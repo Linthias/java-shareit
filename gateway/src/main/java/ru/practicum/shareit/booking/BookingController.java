@@ -44,14 +44,14 @@ public class BookingController {
 	public ResponseEntity<Object> approveBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
 												 @PathVariable Long bookingId,
 												 @RequestParam Boolean approved) {
-		log.info("Approve booking {}, userId={}, approved={}", bookingId, userId, approved);
+		log.info("Approving booking {}, userId={}, approved={}", bookingId, userId, approved);
 		return bookingClient.approveBooking(bookingId, userId, approved);
 	}
 
 	@GetMapping("/{bookingId}")
 	public ResponseEntity<Object> getBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
 											 @PathVariable Long bookingId) {
-		log.info("Get booking {}, userId={}", bookingId, userId);
+		log.info("Getting booking {}, userId={}", bookingId, userId);
 		return bookingClient.getBooking(userId, bookingId);
 	}
 
@@ -60,7 +60,7 @@ public class BookingController {
 			@RequestParam(name = "state", defaultValue = "ALL") String stateParam,
 			@PositiveOrZero @RequestParam(name = "from", defaultValue = "0") Integer from,
 			@Positive @RequestParam(name = "size", defaultValue = "10") Integer size) {
-		log.info("Get booking with state {}, userId={}, from={}, size={}", stateParam, userId, from, size);
+		log.info("Getting booking with state {}, userId={}, from={}, size={}", stateParam, userId, from, size);
 		BookingState state = BookingState.from(stateParam)
 				.orElseThrow(() -> new IllegalArgumentException("Unknown state: " + stateParam));
 		return bookingClient.getBookings(userId, state, from, size);
@@ -73,7 +73,7 @@ public class BookingController {
 			@Positive @RequestParam(name = "size", defaultValue = "10") Integer size) {
 		BookingState state = BookingState.from(stateParam)
 				.orElseThrow(() -> new IllegalArgumentException("Unknown state: " + stateParam));
-		log.info("Get booking with state {}, userId={}, from={}, size={}", stateParam, userId, from, size);
+		log.info("Getting booking with state {}, userId={}, from={}, size={}", stateParam, userId, from, size);
 		return bookingClient.getItemsBookings(userId, state, from, size);
 	}
 

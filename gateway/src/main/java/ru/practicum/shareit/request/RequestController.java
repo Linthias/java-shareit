@@ -36,13 +36,13 @@ public class RequestController {
     @GetMapping("/{requestId}")
     public ResponseEntity<Object> getRequest(@RequestHeader("X-Sharer-User-Id") Long userId,
                                              @PathVariable Long requestId) {
-        log.info("Get request {}, userId={}", requestId, userId);
+        log.info("Getting request {}, userId={}", requestId, userId);
         return requestClient.getRequest(userId, requestId);
     }
 
     @GetMapping
     public ResponseEntity<Object> getUserRequests(@RequestHeader("X-Sharer-User-Id") Long userId) {
-        log.info("Get user {} requests", userId);
+        log.info("Getting user {} requests", userId);
         return requestClient.getUserRequests(userId);
     }
 
@@ -50,7 +50,7 @@ public class RequestController {
     public ResponseEntity<Object> getOtherUsersRequests(@RequestHeader("X-Sharer-User-Id") Long userId,
             @PositiveOrZero @RequestParam(name = "from", defaultValue = "0") Integer from,
             @Positive @RequestParam(name = "size", defaultValue = "10") Integer size) {
-        log.info("Get requests from users other than {}, from={}, size={}", userId, from, size);
+        log.info("Getting requests from users other than {}, from={}, size={}", userId, from, size);
         return requestClient.getOtherUsersRequests(userId, from, size);
     }
 }

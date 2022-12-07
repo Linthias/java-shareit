@@ -55,7 +55,7 @@ public class ItemController {
     @GetMapping("/{itemId}")
     public ResponseEntity<Object> getItem(@RequestHeader("X-Sharer-User-Id") Long userId,
                                           @PathVariable Long itemId) {
-        log.info("Get item {}, userId={}", itemId, userId);
+        log.info("Getting item {}, userId={}", itemId, userId);
         return itemClient.getItem(userId, itemId);
     }
 
@@ -63,7 +63,7 @@ public class ItemController {
     public ResponseEntity<Object> getUserItems(@RequestHeader("X-Sharer-User-Id") Long userId,
             @PositiveOrZero @RequestParam(name = "from", defaultValue = "0") Integer from,
             @Positive @RequestParam(name = "size", defaultValue = "10") Integer size) {
-        log.info("Get user {} items, from={}, size={}", userId, from, size);
+        log.info("Getting user {} items, from={}, size={}", userId, from, size);
         return itemClient.getUserItems(userId, from, size);
     }
 
@@ -72,7 +72,7 @@ public class ItemController {
             @RequestParam String text,
             @PositiveOrZero @RequestParam(name = "from", defaultValue = "0") Integer from,
             @Positive @RequestParam(name = "size", defaultValue = "10") Integer size) {
-        log.info("Search items with {}, userId={} from={}, size={}", text, userId, from, size);
+        log.info("Searching items with {}, userId={} from={}, size={}", text, userId, from, size);
         return itemClient.searchItems(userId, text, from, size);
     }
 }

@@ -26,12 +26,10 @@ public class UserClient extends BaseClient {
     }
 
     public ResponseEntity<Object> addUser(UserRequestDto requestDto) {
-        // добавить проверки??
         return post("", requestDto);
     }
 
     public ResponseEntity<Object> updateUser(long userId, UserPatchDto requestDto) {
-        // добавить проверки??
         return patch("/" + userId, userId, requestDto);
     }
 
